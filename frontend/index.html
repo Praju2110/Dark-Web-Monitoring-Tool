@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dark Web Monitor</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg0: #020408;
+      --bg1: #080d14;
+      --bg2: #0d1520;
+      --bg3: #111d2e;
+      --border: #0e2040;
+      --border2: #1a3356;
+      --glow: #00ff88;
+      --glow2: #00ccff;
+      --glow3: #ff3366;
+      --warn: #ff8800;
+      --yellow: #ffcc00;
+      --text: #a8c5e0;
+      --text-bright: #d4eaf8;
+      --muted: #3a5870;
+      --critical: #ff2244;
+      --high: #ff7700;
+      --medium: #ffcc00;
+      --low: #00dd66;
+      --info: #00aaff;
+      --font-mono: 'Share Tech Mono', monospace;
+      --font-ui: 'Rajdhani', sans-serif;
+      --font-display: 'Orbitron', sans-serif;
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg0);
+      color: var(--text);
+      font-family: var(--font-mono);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── SCANLINES OVERLAY ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,255,136,0.015) 2px,
+        rgba(0,255,136,0.015) 4px
+      );
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    /* ── GRID ── */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,204,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,204,255,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── HEADER ── */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 500;
+      border-bottom: 1px solid var(--border2);
+      background: rgba(2,4,8,0.97);
+      backdrop-filter: blur(20px);
+    }
+
+    .header-inner {
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .logo-mark {
+      width: 44px; height: 44px;
+      border: 1px solid var(--glow);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      box-shadow: 0 0 12px rgba(0,255,136,0.3), inset 0 0 12px rgba(0,255,136,0.05);
+      animation: pulse-border 3s ease infinite;
+    }
+
+    @keyframes pulse-border {
+      0%, 100% { box-shadow: 0 0 12px rgba(0,255,136,0.3), inset 0 0 12px rgba(0,255,136,0.05); }
+      50% { box-shadow: 0 0 24px rgba(0,255,136,0.6), inset 0 0 20px rgba(0,255,136,0.1); }
+    }
+
+    .logo-text {
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--glow);
+      letter-spacing: 2px;
+      text-shadow: 0 0 20px rgba(0,255,136,0.5);
+    }
+
+    .logo-sub {
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+
+    .header-right { display: flex; align-items: center; gap: 16px; }
+
+    .status-dot {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 1px;
+    }
+
+    .dot-live {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--glow);
+      box-shadow: 0 0 8px var(--glow);
+      animation: blink 2s ease infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .dot-live.scanning {
+      background: var(--yellow);
+      box-shadow: 0 0 8px var(--yellow);
+      animation: spin-dot 0.6s linear infinite;
+    }
+
+    @keyframes spin-dot {
+      to { transform: rotate(360deg); border-radius: 2px; }
+    }
+
+    .btn {
+      font-family: var(--font-ui);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      padding: 8px 20px;
+      border-radius: 6px;
+      border: 1px solid;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-transform: uppercase;
+    }
+
+    .btn-primary {
+      background: rgba(0,255,136,0.08);
+      border-color: var(--glow);
+      color: var(--glow);
+    }
+    .btn-primary:hover {
+      background: rgba(0,255,136,0.18);
+      box-shadow: 0 0 20px rgba(0,255,136,0.3);
+      transform: translateY(-1px);
+    }
+    .btn-primary:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      border-color: var(--border2);
+      color: var(--muted);
+    }
+    .btn-ghost:hover { border-color: var(--glow2); color: var(--glow2); }
+
+    .btn-danger {
+      background: rgba(255,34,68,0.08);
+      border-color: var(--critical);
+      color: var(--critical);
+    }
+    .btn-danger:hover { background: rgba(255,34,68,0.18); box-shadow: 0 0 20px rgba(255,34,68,0.3); }
+
+    /* ── LAYOUT ── */
+    .layout {
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 28px 24px 60px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── TABS ── */
+    .tabs {
+      display: flex;
+      gap: 2px;
+      margin-bottom: 28px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tab {
+      padding: 10px 24px;
+      font-family: var(--font-ui);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+      background: none;
+      border-top: none;
+      border-left: none;
+      border-right: none;
+    }
+
+    .tab:hover { color: var(--glow2); }
+    .tab.active { color: var(--glow); border-bottom-color: var(--glow); }
+
+    /* ── STAT CARDS ── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+
+    .stat-card {
+      background: var(--bg1);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px 20px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .stat-card:hover { transform: translateY(-2px); }
+
+    .stat-card::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 1px;
+    }
+
+    .sc-total::after   { background: var(--glow2); }
+    .sc-critical::after{ background: var(--critical); box-shadow: 0 0 8px var(--critical); }
+    .sc-high::after    { background: var(--high); }
+    .sc-medium::after  { background: var(--medium); }
+    .sc-low::after     { background: var(--low); }
+    .sc-new::after     { background: var(--glow); box-shadow: 0 0 8px var(--glow); }
+
+    .stat-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--muted);
+      margin-bottom: 10px;
+      font-family: var(--font-ui);
+    }
+
+    .stat-val {
+      font-family: var(--font-display);
+      font-size: 38px;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .sc-total .stat-val   { color: var(--glow2); text-shadow: 0 0 20px rgba(0,204,255,0.4); }
+    .sc-critical .stat-val{ color: var(--critical); text-shadow: 0 0 20px rgba(255,34,68,0.5); }
+    .sc-high .stat-val    { color: var(--high); }
+    .sc-medium .stat-val  { color: var(--medium); }
+    .sc-low .stat-val     { color: var(--low); }
+    .sc-new .stat-val     { color: var(--glow); text-shadow: 0 0 20px rgba(0,255,136,0.4); }
+
+    /* ── ASSET BAR ── */
+    .asset-bar {
+      background: var(--bg1);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      display: flex;
+      gap: 32px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .asset-group { display: flex; flex-direction: column; gap: 4px; }
+    .asset-label { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); font-family: var(--font-ui); }
+    .asset-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
+    .chip {
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 4px;
+      border: 1px solid;
+      font-family: var(--font-mono);
+    }
+
+    .chip-email  { border-color: rgba(0,204,255,0.3); color: var(--glow2); background: rgba(0,204,255,0.06); }
+    .chip-domain { border-color: rgba(0,255,136,0.3); color: var(--glow); background: rgba(0,255,136,0.06); }
+    .chip-keyword{ border-color: rgba(255,204,0,0.3); color: var(--yellow); background: rgba(255,204,0,0.06); }
+    .chip-empty  { border-color: var(--border); color: var(--muted); font-style: italic; }
+
+    /* ── TOOLBAR ── */
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .search-wrap { position: relative; flex: 1; min-width: 220px; }
+    .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 13px; }
+
+    .search-box {
+      width: 100%;
+      background: var(--bg1);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 10px 12px 10px 36px;
+      color: var(--text-bright);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .search-box:focus { border-color: var(--glow2); box-shadow: 0 0 12px rgba(0,204,255,0.15); }
+    .search-box::placeholder { color: var(--muted); }
+
+    .filter-pill {
+      padding: 7px 14px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--bg1);
+      color: var(--muted);
+      font-family: var(--font-ui);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .filter-pill:hover { border-color: var(--glow2); color: var(--glow2); }
+    .filter-pill.active-all    { border-color: var(--glow2); color: var(--glow2); background: rgba(0,204,255,0.08); }
+    .filter-pill.active-critical{ border-color: var(--critical); color: var(--critical); background: rgba(255,34,68,0.08); }
+    .filter-pill.active-high   { border-color: var(--high); color: var(--high); background: rgba(255,119,0,0.08); }
+    .filter-pill.active-medium { border-color: var(--medium); color: var(--medium); background: rgba(255,204,0,0.08); }
+    .filter-pill.active-low    { border-color: var(--low); color: var(--low); background: rgba(0,221,102,0.08); }
+
+    /* ── FINDINGS LIST ── */
+    .finding-card {
+      background: var(--bg1);
+      border: 1px solid var(--border);
+      border-left: 3px solid;
+      border-radius: 10px;
+      padding: 18px 20px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+    }
+
+    .finding-card:hover { background: var(--bg2); transform: translateX(3px); }
+    .finding-card.expanded { border-color: var(--border2); background: var(--bg2); }
+
+    .finding-card.sev-critical { border-left-color: var(--critical); }
+    .finding-card.sev-high     { border-left-color: var(--high); }
+    .finding-card.sev-medium   { border-left-color: var(--medium); }
+    .finding-card.sev-low      { border-left-color: var(--low); }
+    .finding-card.sev-info     { border-left-color: var(--info); }
+
+    .finding-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .finding-left { display: flex; align-items: flex-start; gap: 12px; flex: 1; }
+
+    .sev-badge {
+      flex-shrink: 0;
+      padding: 3px 10px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      font-family: var(--font-ui);
+      border: 1px solid;
+    }
+
+    .sev-badge.critical { color: var(--critical); border-color: rgba(255,34,68,0.4); background: rgba(255,34,68,0.1); }
+    .sev-badge.high     { color: var(--high); border-color: rgba(255,119,0,0.4); background: rgba(255,119,0,0.1); }
+    .sev-badge.medium   { color: var(--medium); border-color: rgba(255,204,0,0.4); background: rgba(255,204,0,0.1); }
+    .sev-badge.low      { color: var(--low); border-color: rgba(0,221,102,0.4); background: rgba(0,221,102,0.1); }
+    .sev-badge.info     { color: var(--info); border-color: rgba(0,170,255,0.4); background: rgba(0,170,255,0.1); }
+
+    .finding-title { font-size: 14px; color: var(--text-bright); font-family: var(--font-ui); font-weight: 600; line-height: 1.3; }
+    .finding-meta  { font-size: 11px; color: var(--muted); margin-top: 4px; display: flex; gap: 16px; flex-wrap: wrap; }
+
+    .new-badge {
+      font-size: 9px;
+      padding: 2px 7px;
+      background: rgba(0,255,136,0.15);
+      border: 1px solid rgba(0,255,136,0.4);
+      color: var(--glow);
+      border-radius: 3px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      animation: flicker 2s ease infinite;
+    }
+
+    @keyframes flicker {
+      0%, 100% { opacity: 1; }
+      92% { opacity: 1; }
+      93% { opacity: 0.6; }
+      94% { opacity: 1; }
+      95% { opacity: 0.5; }
+      96% { opacity: 1; }
+    }
+
+    .finding-body {
+      display: none;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+    .finding-body.open { display: block; }
+
+    .finding-desc {
+      font-size: 13px;
+      color: var(--text);
+      line-height: 1.7;
+      margin-bottom: 14px;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 10px;
+    }
+
+    .detail-item {
+      background: var(--bg0);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 14px;
+    }
+
+    .detail-key { font-size: 9px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; margin-bottom: 4px; font-family: var(--font-ui); }
+    .detail-val { font-size: 12px; color: var(--text-bright); word-break: break-all; }
+
+    /* ── CONFIG PANEL ── */
+    .config-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 20px;
+    }
+
+    .config-card {
+      background: var(--bg1);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 22px;
+    }
+
+    .config-card-title {
+      font-family: var(--font-display);
+      font-size: 12px;
+      color: var(--glow2);
+      letter-spacing: 2px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .form-group { margin-bottom: 14px; }
+
+    .form-label {
+      display: block;
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+      font-family: var(--font-ui);
+    }
+
+    .form-input {
+      width: 100%;
+      background: var(--bg0);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 9px 13px;
+      color: var(--text-bright);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .form-input:focus { border-color: var(--glow2); box-shadow: 0 0 10px rgba(0,204,255,0.15); }
+    .form-input::placeholder { color: var(--muted); }
+
+    .form-hint { font-size: 10px; color: var(--muted); margin-top: 4px; line-height: 1.4; }
+
+    .tag-input-wrap { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+    .tag { font-size: 11px; padding: 3px 10px; background: rgba(0,204,255,0.08); border: 1px solid rgba(0,204,255,0.25); color: var(--glow2); border-radius: 4px; display: flex; align-items: center; gap: 6px; }
+    .tag-remove { cursor: pointer; color: var(--muted); font-size: 14px; line-height: 1; }
+    .tag-remove:hover { color: var(--critical); }
+    .tag-add { background: transparent; border: 1px dashed var(--border2); color: var(--muted); border-radius: 4px; padding: 3px 10px; font-size: 11px; cursor: pointer; font-family: var(--font-mono); width: 140px; outline: none; }
+    .tag-add:focus { border-color: var(--glow2); color: var(--text); }
+
+    /* ── HISTORY TABLE ── */
+    .hist-table { width: 100%; border-collapse: collapse; background: var(--bg1); border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
+    .hist-table th { padding: 12px 16px; text-align: left; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); background: var(--bg2); border-bottom: 1px solid var(--border); font-family: var(--font-ui); }
+    .hist-table td { padding: 12px 16px; font-size: 13px; border-bottom: 1px solid var(--border); transition: background 0.15s; }
+    .hist-table tr:last-child td { border-bottom: none; }
+    .hist-table tbody tr:hover td { background: var(--bg2); }
+
+    /* ── EMPTY / LOADING ── */
+    .loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 80px;
+      gap: 20px;
+    }
+
+    .terminal-spinner {
+      font-family: var(--font-display);
+      font-size: 32px;
+      color: var(--glow);
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loading-lines { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+    .loading-line {
+      font-size: 12px;
+      color: var(--muted);
+      opacity: 0;
+      animation: appear 0.4s ease forwards;
+    }
+    .loading-line:nth-child(1) { animation-delay: 0.1s; }
+    .loading-line:nth-child(2) { animation-delay: 0.5s; }
+    .loading-line:nth-child(3) { animation-delay: 0.9s; }
+    .loading-line:nth-child(4) { animation-delay: 1.3s; }
+    @keyframes appear { to { opacity: 1; } }
+
+    .empty-state {
+      padding: 60px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .empty-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.4; }
+
+    /* ── ALERT TOAST ── */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--bg2);
+      border: 1px solid var(--glow);
+      color: var(--glow);
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      z-index: 9999;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.3s;
+      box-shadow: 0 0 20px rgba(0,255,136,0.2);
+    }
+    #toast.show { opacity: 1; transform: translateY(0); }
+    #toast.error { border-color: var(--critical); color: var(--critical); box-shadow: 0 0 20px rgba(255,34,68,0.2); }
+
+    .fade-in { animation: fadeSlide 0.4s ease; }
+    @keyframes fadeSlide { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: var(--bg0); }
+    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+    @media (max-width: 768px) {
+      .stats-row { grid-template-columns: repeat(3, 1fr); }
+      .asset-bar { gap: 16px; }
+      .config-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-mark">🕵</div>
+      <div>
+        <div class="logo-text">DARKWATCH</div>
+        <div class="logo-sub">Threat Intelligence Monitor</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="status-dot">
+        <div class="dot-live" id="liveDot"></div>
+        <span id="statusText">STANDBY</span>
+      </div>
+      <button class="btn btn-ghost" onclick="exportFindings()">⬇ Export</button>
+      <button class="btn btn-primary" id="scanBtn" onclick="startScan()">▶ Run Scan</button>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('dashboard', this)">Dashboard</button>
+    <button class="tab" onclick="showTab('findings', this)">Findings</button>
+    <button class="tab" onclick="showTab('history', this)">Scan History</button>
+    <button class="tab" onclick="showTab('config', this)">Configuration</button>
+  </div>
+
+  <div id="tab-dashboard" class="tab-content fade-in"></div>
+  <div id="tab-findings"  class="tab-content fade-in" style="display:none"></div>
+  <div id="tab-history"   class="tab-content fade-in" style="display:none"></div>
+  <div id="tab-config"    class="tab-content fade-in" style="display:none"></div>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+const API = 'http://localhost:5000/api';
+let latestData = null;
+let activeTab = 'dashboard';
+let findingFilter = 'all';
+let findingSearch = '';
+let scanPoll = null;
+let configState = { emails: [], domains: [], keywords: [], ips: [] };
+
+// ── TABS ──────────────────────────────────────────────────────────────────────
+function showTab(name, btn) {
+  document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+  document.getElementById(`tab-${name}`).style.display = 'block';
+  btn.classList.add('active');
+  activeTab = name;
+  if (name === 'dashboard') renderDashboard();
+  if (name === 'findings')  renderFindings();
+  if (name === 'history')   renderHistory();
+  if (name === 'config')    renderConfig();
+}
+
+// ── FETCH ─────────────────────────────────────────────────────────────────────
+async function fetchResults() {
+  try {
+    const r = await fetch(`${API}/results`);
+    const j = await r.json();
+    latestData = j.data;
+    return j.data;
+  } catch (e) { return null; }
+}
+
+async function startScan() {
+  try {
+    const r = await fetch(`${API}/scan`, { method: 'POST' });
+    const j = await r.json();
+    if (j.status === 'ok') {
+      toast('Scan started — monitoring threat feeds...');
+      document.getElementById('liveDot').classList.add('scanning');
+      document.getElementById('statusText').textContent = 'SCANNING';
+      document.getElementById('scanBtn').disabled = true;
+      pollScanStatus();
+    } else {
+      toast(j.message || 'Already scanning', true);
+    }
+  } catch (e) {
+    toast('Cannot connect to backend', true);
+  }
+}
+
+function pollScanStatus() {
+  clearInterval(scanPoll);
+  scanPoll = setInterval(async () => {
+    try {
+      const r = await fetch(`${API}/scan/status`);
+      const j = await r.json();
+      if (!j.running) {
+        clearInterval(scanPoll);
+        document.getElementById('liveDot').classList.remove('scanning');
+        document.getElementById('statusText').textContent = 'LIVE';
+        document.getElementById('scanBtn').disabled = false;
+        await fetchResults();
+        if (activeTab === 'dashboard') renderDashboard();
+        if (activeTab === 'findings')  renderFindings();
+        toast('✓ Scan complete');
+      }
+    } catch (e) { clearInterval(scanPoll); }
+  }, 2000);
+}
+
+function toast(msg, isError = false) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = isError ? 'error show' : 'show';
+  setTimeout(() => el.className = '', 3500);
+}
+
+// ── DASHBOARD ────────────────────────────────────────────────────────────────
+async function renderDashboard() {
+  const container = document.getElementById('tab-dashboard');
+  container.innerHTML = `<div class="loading"><div class="terminal-spinner">◌</div><div class="loading-lines">
+    <div class="loading-line">> initializing threat intelligence feeds...</div>
+    <div class="loading-line">> connecting to breach databases...</div>
+    <div class="loading-line">> loading scan results...</div>
+    <div class="loading-line">> rendering dashboard...</div>
+  </div></div>`;
+
+  const data = await fetchResults();
+
+  if (!data) {
+    container.innerHTML = noDataPanel();
+    return;
+  }
+
+  const { summary, total_findings, new_findings, monitored_assets, scan_time } = data;
+
+  container.innerHTML = `
+    <div class="fade-in">
+      <div class="stats-row">
+        <div class="stat-card sc-total"><div class="stat-label">Total Findings</div><div class="stat-val">${total_findings}</div></div>
+        <div class="stat-card sc-new"><div class="stat-label">New This Scan</div><div class="stat-val">${new_findings}</div></div>
+        <div class="stat-card sc-critical"><div class="stat-label">Critical</div><div class="stat-val">${summary.critical}</div></div>
+        <div class="stat-card sc-high"><div class="stat-label">High</div><div class="stat-val">${summary.high}</div></div>
+        <div class="stat-card sc-medium"><div class="stat-label">Medium</div><div class="stat-val">${summary.medium}</div></div>
+        <div class="stat-card sc-low"><div class="stat-label">Low</div><div class="stat-val">${summary.low}</div></div>
+      </div>
+
+      <div class="asset-bar">
+        <div class="asset-group">
+          <div class="asset-label">Monitored Emails</div>
+          <div class="asset-chips">
+            ${(monitored_assets.emails||[]).length ? (monitored_assets.emails||[]).map(e=>`<span class="chip chip-email">${e}</span>`).join('') : '<span class="chip chip-empty">none configured</span>'}
+          </div>
+        </div>
+        <div class="asset-group">
+          <div class="asset-label">Monitored Domains</div>
+          <div class="asset-chips">
+            ${(monitored_assets.domains||[]).length ? (monitored_assets.domains||[]).map(d=>`<span class="chip chip-domain">${d}</span>`).join('') : '<span class="chip chip-empty">none configured</span>'}
+          </div>
+        </div>
+        <div class="asset-group">
+          <div class="asset-label">Keywords</div>
+          <div class="asset-chips">
+            ${(monitored_assets.keywords||[]).length ? (monitored_assets.keywords||[]).map(k=>`<span class="chip chip-keyword">${k}</span>`).join('') : '<span class="chip chip-empty">none configured</span>'}
+          </div>
+        </div>
+        <div class="asset-group" style="margin-left:auto">
+          <div class="asset-label">Last Scan</div>
+          <div style="font-size:12px;color:var(--glow2)">${new Date(scan_time).toLocaleString()}</div>
+        </div>
+      </div>
+
+      <div style="font-family:var(--font-ui);font-size:11px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px">
+        Recent Critical & High Findings
+      </div>
+      ${renderFindingList(data.findings.filter(f=>['critical','high'].includes(f.severity)).slice(0,8), true)}
+      ${data.findings.filter(f=>['critical','high'].includes(f.severity)).length === 0
+        ? `<div class="empty-state"><div class="empty-icon">✓</div>No critical or high findings — looking clean.</div>`
+        : ''}
+    </div>`;
+}
+
+function noDataPanel() {
+  return `
+    <div class="empty-state" style="padding:80px 40px">
+      <div class="empty-icon">🛰</div>
+      <div style="font-family:var(--font-display);font-size:14px;color:var(--glow2);letter-spacing:2px;margin-bottom:12px">NO SCAN DATA</div>
+      <div style="margin-bottom:24px">Configure your assets in the Configuration tab, then run your first scan.</div>
+      <button class="btn btn-primary" onclick="startScan()">▶ Run First Scan</button>
+      <div style="margin-top:16px;font-size:11px;color:var(--muted)">Backend must be running: <code style="color:var(--glow)">cd backend && python server.py</code></div>
+    </div>`;
+}
+
+// ── FINDINGS ──────────────────────────────────────────────────────────────────
+async function renderFindings() {
+  const container = document.getElementById('tab-findings');
+  const data = latestData || await fetchResults();
+  if (!data) { container.innerHTML = noDataPanel(); return; }
+
+  let findings = data.findings;
+
+  container.innerHTML = `
+    <div class="fade-in">
+      <div class="toolbar">
+        <div class="search-wrap">
+          <span class="search-icon">⌕</span>
+          <input class="search-box" placeholder="Search findings..." id="findSearch" oninput="filterFindings()" />
+        </div>
+        <button class="filter-pill active-all" onclick="setFindingFilter('all',this)">All (${findings.length})</button>
+        <button class="filter-pill" onclick="setFindingFilter('critical',this)">Critical (${findings.filter(f=>f.severity==='critical').length})</button>
+        <button class="filter-pill" onclick="setFindingFilter('high',this)">High (${findings.filter(f=>f.severity==='high').length})</button>
+        <button class="filter-pill" onclick="setFindingFilter('medium',this)">Medium (${findings.filter(f=>f.severity==='medium').length})</button>
+        <button class="filter-pill" onclick="setFindingFilter('low',this)">Low (${findings.filter(f=>f.severity==='low').length})</button>
+        <button class="filter-pill" onclick="setFindingFilter('new',this)">New Only</button>
+      </div>
+      <div id="findingsList">
+        ${renderFindingList(findings)}
+      </div>
+    </div>`;
+}
+
+function setFindingFilter(f, btn) {
+  findingFilter = f;
+  document.querySelectorAll('.filter-pill').forEach(b => b.className = 'filter-pill');
+  btn.className = `filter-pill active-${f === 'new' ? 'all' : f}`;
+  filterFindings();
+}
+
+function filterFindings() {
+  if (!latestData) return;
+  findingSearch = document.getElementById('findSearch')?.value.toLowerCase() || '';
+  let findings = latestData.findings;
+  if (findingFilter === 'new') findings = findings.filter(f => f.is_new);
+  else if (findingFilter !== 'all') findings = findings.filter(f => f.severity === findingFilter);
+  if (findingSearch) findings = findings.filter(f =>
+    f.title.toLowerCase().includes(findingSearch) ||
+    f.asset.toLowerCase().includes(findingSearch) ||
+    f.source.toLowerCase().includes(findingSearch)
+  );
+  document.getElementById('findingsList').innerHTML = renderFindingList(findings);
+}
+
+function renderFindingList(findings, compact = false) {
+  if (!findings || findings.length === 0)
+    return `<div class="empty-state"><div class="empty-icon">✓</div>No findings match current filter.</div>`;
+  return findings.map((f, i) => `
+    <div class="finding-card sev-${f.severity}" onclick="toggleFinding(this)">
+      <div class="finding-head">
+        <div class="finding-left">
+          <span class="sev-badge ${f.severity}">${f.severity}</span>
+          <div>
+            <div class="finding-title">${f.title}</div>
+            <div class="finding-meta">
+              <span>⬡ ${f.source}</span>
+              <span>◈ ${f.asset}</span>
+              <span>⏱ ${new Date(f.discovered_at).toLocaleString()}</span>
+              ${f.breach_date ? `<span>📅 Breach: ${f.breach_date}</span>` : ''}
+            </div>
+          </div>
+        </div>
+        ${f.is_new ? '<span class="new-badge">NEW</span>' : ''}
+      </div>
+      ${!compact ? `
+      <div class="finding-body">
+        <div class="finding-desc">${f.description}</div>
+        <div class="detail-grid">
+          ${Object.entries(f.data||{}).slice(0,8).map(([k,v]) => `
+            <div class="detail-item">
+              <div class="detail-key">${k.replace(/_/g,' ')}</div>
+              <div class="detail-val">${Array.isArray(v) ? v.join(', ') : String(v||'—').slice(0,120)}</div>
+            </div>`).join('')}
+        </div>
+      </div>` : ''}
+    </div>`).join('');
+}
+
+function toggleFinding(el) {
+  const body = el.querySelector('.finding-body');
+  if (!body) return;
+  el.classList.toggle('expanded');
+  body.classList.toggle('open');
+}
+
+// ── HISTORY ───────────────────────────────────────────────────────────────────
+async function renderHistory() {
+  const container = document.getElementById('tab-history');
+  try {
+    const r = await fetch(`${API}/history`);
+    const j = await r.json();
+    const rows = j.history || [];
+
+    if (!rows.length) {
+      container.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div>No scan history yet. Run your first scan.</div>`;
+      return;
+    }
+
+    container.innerHTML = `
+      <div class="fade-in">
+        <table class="hist-table">
+          <thead>
+            <tr>
+              <th>Scan Time</th>
+              <th>Total</th>
+              <th>New</th>
+              <th>Critical</th>
+              <th>High</th>
+              <th>Medium</th>
+              <th>Low</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(r => `
+              <tr>
+                <td style="color:var(--glow2)">${new Date(r.scan_time).toLocaleString()}</td>
+                <td style="color:var(--text-bright)">${r.total_findings}</td>
+                <td style="color:var(--glow)">${r.new_findings}</td>
+                <td style="color:var(--critical)">${r.summary?.critical||0}</td>
+                <td style="color:var(--high)">${r.summary?.high||0}</td>
+                <td style="color:var(--medium)">${r.summary?.medium||0}</td>
+                <td style="color:var(--low)">${r.summary?.low||0}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  } catch (e) {
+    container.innerHTML = `<div class="empty-state">Error loading history: ${e.message}</div>`;
+  }
+}
+
+// ── CONFIG ────────────────────────────────────────────────────────────────────
+async function renderConfig() {
+  const container = document.getElementById('tab-config');
+  try {
+    const r = await fetch(`${API}/config`);
+    const j = await r.json();
+    const cfg = j.config || {};
+    configState = {
+      emails: cfg.monitored_emails || [],
+      domains: cfg.monitored_domains || [],
+      keywords: cfg.monitored_keywords || [],
+      ips: cfg.monitored_ips || [],
+    };
+
+    container.innerHTML = `
+      <div class="config-grid fade-in">
+
+        <div class="config-card">
+          <div class="config-card-title">◈ API Keys</div>
+          <div class="form-group">
+            <label class="form-label">HaveIBeenPwned API Key</label>
+            <input class="form-input" type="password" id="hibpKey" placeholder="Enter key..." />
+            <div class="form-hint">Get free key at haveibeenpwned.com/API/Key — required for email breach lookup</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Dehashed Email</label>
+            <input class="form-input" type="text" id="dehashedEmail" placeholder="your@email.com" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Dehashed API Key</label>
+            <input class="form-input" type="password" id="dehashedKey" placeholder="Enter key..." />
+            <div class="form-hint">Get key at dehashed.com — credential leak database</div>
+          </div>
+        </div>
+
+        <div class="config-card">
+          <div class="config-card-title">✉ Monitored Emails</div>
+          <div class="form-group">
+            <div class="tag-input-wrap" id="emailTags">
+              ${configState.emails.map(e => tagHTML(e, 'emails')).join('')}
+              <input class="tag-add" placeholder="+ add email" onkeydown="addTag(event, 'emails')" />
+            </div>
+            <div class="form-hint">Emails checked against breach databases on every scan</div>
+          </div>
+        </div>
+
+        <div class="config-card">
+          <div class="config-card-title">🌐 Monitored Domains</div>
+          <div class="form-group">
+            <div class="tag-input-wrap" id="domainTags">
+              ${configState.domains.map(d => tagHTML(d, 'domains')).join('')}
+              <input class="tag-add" placeholder="+ add domain" onkeydown="addTag(event, 'domains')" />
+            </div>
+            <div class="form-hint">Domains searched in paste sites and threat feeds</div>
+          </div>
+        </div>
+
+        <div class="config-card">
+          <div class="config-card-title">🔍 Monitored Keywords</div>
+          <div class="form-group">
+            <div class="tag-input-wrap" id="keywordTags">
+              ${configState.keywords.map(k => tagHTML(k, 'keywords')).join('')}
+              <input class="tag-add" placeholder="+ add keyword" onkeydown="addTag(event, 'keywords')" />
+            </div>
+            <div class="form-hint">Custom terms (company names, internal code names, exec names)</div>
+          </div>
+        </div>
+
+      </div>
+      <div style="margin-top:20px;display:flex;gap:12px">
+        <button class="btn btn-primary" onclick="saveConfig()">💾 Save Configuration</button>
+        <button class="btn btn-ghost" onclick="renderConfig()">↺ Reset</button>
+      </div>`;
+  } catch (e) {
+    container.innerHTML = `
+      <div class="empty-state">
+        Cannot connect to backend.<br>
+        Run: <code style="color:var(--glow)">cd backend && python server.py</code>
+      </div>`;
+  }
+}
+
+function tagHTML(val, group) {
+  return `<span class="tag">${val}<span class="tag-remove" onclick="removeTag('${val}','${group}')">×</span></span>`;
+}
+
+function removeTag(val, group) {
+  configState[group] = configState[group].filter(v => v !== val);
+  rerenderTags(group);
+}
+
+function addTag(e, group) {
+  if (e.key !== 'Enter') return;
+  const val = e.target.value.trim();
+  if (val && !configState[group].includes(val)) {
+    configState[group].push(val);
+    e.target.value = '';
+    rerenderTags(group);
+  }
+}
+
+function rerenderTags(group) {
+  const map = { emails: 'emailTags', domains: 'domainTags', keywords: 'keywordTags', ips: 'ipTags' };
+  const el = document.getElementById(map[group]);
+  if (!el) return;
+  const input = el.querySelector('.tag-add');
+  const inputHTML = input ? input.outerHTML : `<input class="tag-add" placeholder="+ add" onkeydown="addTag(event,'${group}')" />`;
+  el.innerHTML = configState[group].map(v => tagHTML(v, group)).join('') + inputHTML;
+}
+
+async function saveConfig() {
+  const payload = {
+    monitored_emails: configState.emails,
+    monitored_domains: configState.domains,
+    monitored_keywords: configState.keywords,
+    monitored_ips: configState.ips,
+  };
+  const hibp = document.getElementById('hibpKey')?.value;
+  if (hibp) payload.hibp_api_key = hibp;
+  const dEmail = document.getElementById('dehashedEmail')?.value;
+  if (dEmail) payload.dehashed_email = dEmail;
+  const dKey = document.getElementById('dehashedKey')?.value;
+  if (dKey) payload.dehashed_api_key = dKey;
+
+  try {
+    const r = await fetch(`${API}/config`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const j = await r.json();
+    if (j.status === 'ok') toast('✓ Configuration saved');
+    else toast(j.message, true);
+  } catch (e) {
+    toast('Error saving config', true);
+  }
+}
+
+function exportFindings() {
+  if (!latestData) { toast('No data to export', true); return; }
+  const findings = latestData.findings;
+  const headers = ['id','source','type','severity','asset','title','description','discovered_at','breach_date','is_new'];
+  const rows = findings.map(f => headers.map(h => `"${String(f[h]||'').replace(/"/g,'""')}"`).join(','));
+  const csv = [headers.join(','), ...rows].join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
+  a.download = `darkweb_findings_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  toast('Export downloaded');
+}
+
+// ── BOOT ──────────────────────────────────────────────────────────────────────
+(async () => {
+  try {
+    const r = await fetch(`${API}/health`);
+    if (r.ok) document.getElementById('statusText').textContent = 'CONNECTED';
+  } catch {}
+  renderDashboard();
+})();
+</script>
+</body>
+</html>
